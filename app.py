@@ -397,78 +397,154 @@ def grade_q3(set_no: int, visual: str, visual_effect: str, audio: str, audio_eff
 # Streamlit UI
 # -----------------------------
 
-st.set_page_config(page_title="서·논술형 자동 채점기", page_icon="📝", layout="wide")
-st.title("📝 2회 시험 대비 서·논술형 자동 채점기")
-st.caption("규칙 기반 시범 버전: 동의어·유사 표현, 설명 방법 일치, 오개념, 결론 방향을 함께 검사합니다.")
+# -----------------------------
+# Streamlit UI
+# -----------------------------
+
+PASSAGES = {
+    1: {
+        "heading": "💡 [실전 적용 1] 과제 난이도와 사회적 촉진/억제",
+        "question": "[기자] 사회적 촉진과 억제를 일상생활에 어떻게 적용할 수 있을까요?",
+        "answer": "[전문가] 비교적 쉬운 취미 생활이나 큰 노력을 들일 필요가 없는 과제를 할 때는 커피숍이나 도서관에서 하거나 공부 모임을 만드는 것이 효율적일 수 있습니다. 반대로 지나치게 어렵거나 도전이 필요한 과제는 차분하게 혼자 집중하는 시간을 가지는 것이 좋습니다.",
+        "q1_intro": "윗글을 요약하여 표로 정리하였다. 빈칸 ㉠~㉢에 들어갈 내용을 찾아 쓰시오.",
+    },
+    2: {
+        "heading": "⚡ [실전 적용 2] 정전기의 원리",
+        "question": "[기자] 정전기는 왜 전압이 높아도 위험하지 않은가요?",
+        "answer": "[전문가] 정전기는 높은 곳에 고여 있는 물과 비슷합니다. 물이 높은 곳에 있어도 흐르지 않으면 큰 힘을 전달하지 못하듯, 정전기도 전하가 이동하지 않고 머물러 있기 때문에 전압이 높아도 위험하지 않습니다.",
+        "q1_intro": "윗글을 요약하여 표로 정리하였다. 빈칸 ㉠~㉢에 들어갈 내용을 찾아 쓰시오.",
+    },
+    3: {
+        "heading": "🎨 [실전 적용 3] 인공 지능 그림과 예술",
+        "question": "[기자] 인공 지능이 만든 그림도 예술이라고 할 수 있을까요?",
+        "answer": "[전문가] 인간의 예술에는 작가의 감정과 철학, 삶의 경험과 관점이 담깁니다. 인공 지능 그림에는 이러한 요소가 없어 예술로 보기 어렵지만, 기존 미술계에 변화를 가져오고 예술의 범주를 확장할 수 있다는 상징적 가치는 있습니다.",
+        "q1_intro": "윗글을 요약하여 표로 정리하였다. 빈칸 ㉠~㉢에 들어갈 내용을 찾아 쓰시오.",
+    },
+}
+
+st.set_page_config(page_title="서·논술형 자동 채점기", page_icon="💡", layout="wide")
+
+st.markdown(
+    """
+    <style>
+    .block-container {max-width: 1080px; padding-top: 2.2rem; padding-bottom: 3rem;}
+    h1, h2, h3 {color:#1f2f46;}
+    .hero-title {font-size:2.05rem; font-weight:800; color:#1f2f46; margin:0 0 1.2rem 0;}
+    .passage-card {background:#eaf2ff; border-radius:14px; padding:24px 28px; line-height:1.95; font-size:1.12rem; color:#17243a; margin-bottom:1.35rem;}
+    .section-line {border-top:1px solid #d7dee8; margin:2.1rem 0 1.6rem 0;}
+    .question-title {font-size:1.18rem; line-height:1.7; margin-bottom:1rem;}
+    .score-card {background:#f5f8fc; border:1px solid #d8e0ec; border-radius:12px; padding:18px 20px; margin-top:1rem;}
+    .stTabs [data-baseweb="tab-list"] {gap:18px;}
+    .stTabs [data-baseweb="tab"] {height:54px; border:1px solid #d5dbe5; border-radius:10px 10px 0 0; padding:0 28px; background:white;}
+    .stTabs [aria-selected="true"] {background:#2878c8 !important; color:white !important; font-weight:700;}
+    div[data-testid="stTextArea"] textarea {font-size:1rem;}
+    div[data-testid="stTextInput"] input {font-size:1rem; text-align:center;}
+    </style>
+    """,
+    unsafe_allow_html=True,
+)
 
 with st.sidebar:
-    set_no = st.selectbox("세트 선택", options=[1, 2, 3], format_func=lambda x: f"{x}세트 — {SETS[x]['title']}")
-    question_no = st.radio("문항 선택", options=[1, 2, 3], format_func=lambda x: f"서·논술형 {x}")
-    st.divider()
-    show_models = st.checkbox("모범 답안 보기", value=True)
+    set_no = st.selectbox("세트 선택", [1, 2, 3], format_func=lambda x: f"{x}세트 — {SETS[x]['title']}")
+    show_models = st.toggle("채점 후 모범 답안 표시", value=True)
+    st.caption("답안을 입력한 뒤 각 문항의 채점 버튼을 누르세요.")
 
-st.subheader(f"{set_no}세트 — {SETS[set_no]['title']} / 서·논술형 {question_no}")
+p = PASSAGES[set_no]
+st.markdown(f'<div class="hero-title">{p["heading"]}</div>', unsafe_allow_html=True)
+st.markdown(
+    f'<div class="passage-card"><div>{p["question"]}</div><br><div>{p["answer"]}</div></div>',
+    unsafe_allow_html=True,
+)
 
-if question_no == 1:
-    specs = SETS[set_no]["q1"]["answers"]
-    answers = {}
-    cols = st.columns(3)
-    for col, label in zip(cols, ["㉠", "㉡", "㉢"]):
-        with col:
-            answers[label] = st.text_area(label, height=120, key=f"q1_{set_no}_{label}")
-            if show_models:
-                st.info(f"모범 답안: {specs[label]['model']}")
+tab1, tab2, tab3 = st.tabs(["🖍️ 1번 빈칸 채우기", "🟪 2번 설명문 쓰기", "🟪 3번 영상 기획"])
 
-    if st.button("채점하기", type="primary"):
-        result = grade_q1(set_no, answers)
-        st.metric("점수", f"{result.score:.0f} / {result.max_score:.0f}")
+with tab1:
+    st.markdown('<div class="section-line"></div>', unsafe_allow_html=True)
+    st.markdown(f'<div class="question-title"><b>[서·논술형 1]</b> {p["q1_intro"]}</div>', unsafe_allow_html=True)
+
+    if set_no == 1:
+        h = st.columns([1.1, 2.1, 1.1])
+        for col, txt in zip(h, ["과제의 특성", "환경", "현상"]):
+            col.markdown(f"<div style='background:#dfe8f4;border:1px solid #cbd5e1;padding:18px;text-align:center;font-weight:700'>{txt}</div>", unsafe_allow_html=True)
+        r1 = st.columns([1.1, 2.1, 1.1])
+        a1 = r1[0].text_input("㉠", key="q1_1_a", label_visibility="collapsed", placeholder="㉠ 입력")
+        r1[1].markdown("<div style='border:1px solid #cbd5e1;padding:20px;text-align:center'>공부 모임 등 여러 명이 함께함</div>", unsafe_allow_html=True)
+        r1[2].markdown("<div style='border:1px solid #cbd5e1;padding:20px;text-align:center'>사회적 촉진</div>", unsafe_allow_html=True)
+        r2 = st.columns([1.1, 2.1, 1.1])
+        r2[0].markdown("<div style='border:1px solid #cbd5e1;padding:20px;text-align:center'>어려운 과제</div>", unsafe_allow_html=True)
+        a2 = r2[1].text_input("㉡", key="q1_1_b", label_visibility="collapsed", placeholder="㉡ 입력")
+        a3 = r2[2].text_input("㉢", key="q1_1_c", label_visibility="collapsed", placeholder="㉢ 입력")
+    else:
+        specs = SETS[set_no]["q1"]["answers"]
+        cols = st.columns(3)
+        vals = []
+        for col, label in zip(cols, ["㉠", "㉡", "㉢"]):
+            vals.append(col.text_area(label, key=f"q1_{set_no}_{label}", height=110, placeholder=f"{label}에 들어갈 내용을 쓰세요."))
+        a1, a2, a3 = vals
+
+    if st.button("1번 채점하기", type="primary", use_container_width=True, key=f"grade_q1_{set_no}"):
+        result = grade_q1(set_no, {"㉠": a1, "㉡": a2, "㉢": a3})
+        st.markdown(f"<div class='score-card'><b>점수: {result.score:.0f} / {result.max_score:.0f}</b></div>", unsafe_allow_html=True)
         for name, ok, detail in result.checks:
             (st.success if ok else st.error)(f"{name}: {'통과' if ok else '미통과'} — {detail}")
         if result.feedback:
             st.warning("\n".join(f"- {x}" for x in result.feedback))
+        if show_models:
+            with st.expander("모범 답안 보기"):
+                for label, spec in SETS[set_no]["q1"]["answers"].items():
+                    st.write(f"**{label}** {spec['model']}")
 
-elif question_no == 2:
-    st.markdown("두 문장을 작성하고, 각 문장 끝에 선택한 설명 방법을 괄호로 표시하세요. 예: `(인과)`")
-    ans1 = st.text_area("(1)", height=130, key=f"q2_{set_no}_1")
-    ans2 = st.text_area("(2)", height=130, key=f"q2_{set_no}_2")
-
-    if show_models:
-        st.markdown("#### 선택지별 모범 답안")
-        for method, model in SETS[set_no]["q2"]["models"].items():
-            st.write(f"**{method}**: {model}")
-
-    if st.button("채점하기", type="primary"):
-        result = grade_q2(set_no, ans1, ans2)
-        st.metric("점수", f"{result.score:.0f} / {result.max_score:.0f}")
-        for name, ok, detail in result.checks:
-            (st.success if ok else st.error)(f"{name}: {'통과' if ok else '미통과'} — {detail}")
-        if result.feedback:
-            st.warning("\n".join(f"- {x}" for x in result.feedback))
-
-else:
+with tab2:
+    st.markdown('<div class="section-line"></div>', unsafe_allow_html=True)
+    st.markdown('<div class="question-title"><b>[서·논술형 2]</b> 윗글의 내용을 서로 다른 두 가지 설명 방법으로 설명하시오. 각 문장 끝에 사용한 설명 방법을 괄호 안에 쓰시오.</div>', unsafe_allow_html=True)
+    allowed = list(SETS[set_no]["q2"]["models"].keys())
     c1, c2 = st.columns(2)
     with c1:
-        visual = st.text_area("시각 요소(Ⓐ)", height=120, key=f"q3_{set_no}_visual")
-        visual_effect = st.text_area("시각 요소의 효과", height=120, key=f"q3_{set_no}_visual_effect")
+        m1 = st.selectbox("(1) 설명 방법", allowed, key=f"m1_{set_no}")
+        s1 = st.text_area("(1) 설명문", key=f"s1_{set_no}", height=150)
     with c2:
-        audio = st.text_area("청각 요소(Ⓑ)", height=120, key=f"q3_{set_no}_audio")
-        audio_effect = st.text_area("청각 요소의 효과", height=120, key=f"q3_{set_no}_audio_effect")
+        m2 = st.selectbox("(2) 설명 방법", allowed, index=1 if len(allowed) > 1 else 0, key=f"m2_{set_no}")
+        s2 = st.text_area("(2) 설명문", key=f"s2_{set_no}", height=150)
+    ans1 = f"{s1} ({m1})" if s1.strip() else ""
+    ans2 = f"{s2} ({m2})" if s2.strip() else ""
 
-    if show_models:
-        models = SETS[set_no]["q3"]["models"]
-        st.markdown("#### 모범 답안")
-        st.write(f"**시각 요소:** {models['visual']}")
-        st.write(f"**시각 효과:** {models['visual_effect']}")
-        st.write(f"**청각 요소:** {models['audio']}")
-        st.write(f"**청각 효과:** {models['audio_effect']}")
-
-    if st.button("채점하기", type="primary"):
-        result = grade_q3(set_no, visual, visual_effect, audio, audio_effect)
-        st.metric("점수", f"{result.score:.0f} / {result.max_score:.0f}")
+    if st.button("2번 채점하기", type="primary", use_container_width=True, key=f"grade_q2_{set_no}"):
+        result = grade_q2(set_no, ans1, ans2)
+        st.markdown(f"<div class='score-card'><b>점수: {result.score:.0f} / {result.max_score:.0f}</b></div>", unsafe_allow_html=True)
         for name, ok, detail in result.checks:
             (st.success if ok else st.error)(f"{name}: {'통과' if ok else '미통과'} — {detail}")
         if result.feedback:
             st.warning("\n".join(f"- {x}" for x in result.feedback))
+        if show_models:
+            with st.expander("선택지별 모범 답안 보기"):
+                for method, model in SETS[set_no]["q2"]["models"].items():
+                    st.write(f"**{method}**: {model}")
+
+with tab3:
+    st.markdown('<div class="section-line"></div>', unsafe_allow_html=True)
+    st.markdown('<div class="question-title"><b>[서·논술형 3, 총 6점]</b> 윗글의 핵심 내용을 영상으로 표현하려고 한다. 시각 요소와 청각 요소, 그리고 각각의 효과를 구체적으로 쓰시오.</div>', unsafe_allow_html=True)
+    c1, c2 = st.columns(2)
+    with c1:
+        visual = st.text_area("시각 요소 Ⓐ (2점)", key=f"v_{set_no}", height=130)
+        visual_effect = st.text_area("시각 요소의 효과 (1점)", key=f"ve_{set_no}", height=130)
+    with c2:
+        audio = st.text_area("청각 요소 Ⓑ (2점)", key=f"a_{set_no}", height=130)
+        audio_effect = st.text_area("청각 요소의 효과 (1점)", key=f"ae_{set_no}", height=130)
+
+    if st.button("3번 채점하기", type="primary", use_container_width=True, key=f"grade_q3_{set_no}"):
+        result = grade_q3(set_no, visual, visual_effect, audio, audio_effect)
+        st.markdown(f"<div class='score-card'><b>점수: {result.score:.0f} / {result.max_score:.0f}</b></div>", unsafe_allow_html=True)
+        for name, ok, detail in result.checks:
+            (st.success if ok else st.error)(f"{name}: {'통과' if ok else '미통과'} — {detail}")
+        if result.feedback:
+            st.warning("\n".join(f"- {x}" for x in result.feedback))
+        if show_models:
+            models = SETS[set_no]["q3"]["models"]
+            with st.expander("모범 답안 보기"):
+                st.write(f"**시각 요소:** {models['visual']}")
+                st.write(f"**시각 요소의 효과:** {models['visual_effect']}")
+                st.write(f"**청각 요소:** {models['audio']}")
+                st.write(f"**청각 요소의 효과:** {models['audio_effect']}")
 
 st.divider()
-st.caption("주의: 이 코드는 규칙 기반 초안입니다. 실제 평가에 적용하기 전 학생 답안 표본으로 동의어 사전과 오개념 규칙을 보정하세요.")
+st.caption("규칙 기반 자동 채점 초안입니다. 실제 평가 전에 학생 답안 표본을 활용해 동의어·오개념 규칙을 보정하세요.")
